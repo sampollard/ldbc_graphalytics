@@ -15,21 +15,27 @@
  */
 package nl.tudelft.graphalytics.granula;
 
-import nl.tudelft.granula.util.FileUtil;
 import nl.tudelft.graphalytics.domain.Benchmark;
 import nl.tudelft.graphalytics.domain.BenchmarkResult;
 import nl.tudelft.graphalytics.domain.BenchmarkSuite;
 import nl.tudelft.graphalytics.domain.BenchmarkSuiteResult;
 import nl.tudelft.graphalytics.plugin.Plugin;
+import nl.tudelft.graphalytics.reporting.BenchmarkReportFile;
 import nl.tudelft.graphalytics.reporting.BenchmarkReportGenerator;
 import nl.tudelft.graphalytics.reporting.BenchmarkReportWriter;
 import nl.tudelft.graphalytics.reporting.html.HtmlBenchmarkReportGenerator;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 
+/**
+ * Created by tim on 12/11/15.
+ */
 public class GranulaPlugin implements Plugin {
 
 	private static final Logger LOG = LogManager.getLogger();
@@ -38,12 +44,12 @@ public class GranulaPlugin implements Plugin {
 
 	private final GranulaAwarePlatform platform;
 	private final BenchmarkReportWriter reportWriter;
-	private final GranulaDriver granulaDriver;
+	private final GranulaManager granulaManager;
 
 	public GranulaPlugin(GranulaAwarePlatform platform, BenchmarkReportWriter reportWriter) {
 		this.platform = platform;
 		this.reportWriter = reportWriter;
-		this.granulaDriver = new GranulaDriver(platform);
+		this.granulaManager = new GranulaManager(platform);
 	}
 
 	@Override
@@ -62,49 +68,69 @@ public class GranulaPlugin implements Plugin {
 	}
 
 	@Override
-	public void preBenchmark(Benchmark benchmark) {
-		if(GranulaDriver.enabled) {
-			if(GranulaDriver.platformLogEnabled) {
-				granulaDriver.storeDriverLog(platform, benchmark, getLogDirectory(benchmark));
-				platform.preBenchmark(benchmark, getLogDirectory(benchmark));
+	public void preBenchmark(Benchmark nextBenchmark) {
+		if(GranulaManager.isGranulaEnabled) {
+			if(GranulaManager.isLoggingEnabled) {
+				LOG.info("- Collecting job logs for Granula.");
+				platform.setBenchmarkLogDirectory(getLogDirectory(nextBenchmark));
 			}
 		}
 
 	}
 
-
 	@Override
-	public void postBenchmark(Benchmark benchmark, BenchmarkResult benchmarkResult) {
-		if (GranulaDriver.enabled) {
-			if (GranulaDriver.platformLogEnabled) {
-				platform.postBenchmark(benchmark, getLogDirectory(benchmark));
+	public void postBenchmark(Benchmark completedBenchmark, BenchmarkResult benchmarkResult) {
+		if (GranulaManager.isGranulaEnabled) {
+			if (GranulaManager.isLoggingEnabled) {
+				LOG.info("- Categorizing collected logs for Granula.");
+				platform.finalizeBenchmarkLogs(getLogDirectory(completedBenchmark));
 			}
 		}
 	}
 
 	@Override
 	public void postBenchmarkSuite(BenchmarkSuite benchmarkSuite, BenchmarkSuiteResult benchmarkSuiteResult) {
-		if (GranulaDriver.enabled) {
-			if (GranulaDriver.archivingEnabled) {
+		if (GranulaManager.isGranulaEnabled) {
+			if (GranulaManager.isArchivingEnabled) {
+				LOG.info("- Generating Granula archives from collected job logs.");
 				try {
-                    granulaDriver.setReportDirPath(reportWriter.getOrCreateOutputDataPath());
-                    granulaDriver.generateArchive(benchmarkSuiteResult);
-                } catch (Exception ex) {
+                    granulaManager.setReportDirPath(reportWriter.getOrCreateOutputDataPath());
+                    granulaManager.generateArchive(benchmarkSuiteResult);
+
+					if(!GranulaManager.isLogDataPreserved) {
+						LOG.info("- Deleting collected job logs.");
+						Path logPath = reportWriter.getOrCreateOutputDataPath().resolve("log");
+						FileUtils.deleteDirectory(logPath.toFile());
+					}
+                } catch (IOException ex) {
                     LOG.error("Failed to generate Granula archives for the benchmark results:", ex);
-                }
+                } catch (Exception ex) {
+					LOG.error("Failed to generate Granula archives for the benchmark results:", ex);
+				}
+
 			}
 		}
 	}
 
+	private Path getLogDirectory(Benchmark benchmark) {
+		try {
+			return reportWriter.getOrCreateOutputDataPath().resolve(LOG_DIR).resolve(benchmark.getBenchmarkIdentificationString());
+		} catch (IOException e) {
+			// TODO: Add error handling
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	@Override
 	public void preReportGeneration(BenchmarkReportGenerator reportGenerator) {
-		if (GranulaDriver.enabled) {
-			if (GranulaDriver.archivingEnabled) {
+		if (GranulaManager.isGranulaEnabled) {
+			if (GranulaManager.isArchivingEnabled) {
+				LOG.info("- Embedding Granula report into main report.");
 				if (reportGenerator instanceof HtmlBenchmarkReportGenerator) {
-					HtmlBenchmarkReportGenerator htmlReportGenerator = (HtmlBenchmarkReportGenerator)reportGenerator;
-					htmlReportGenerator.registerPlugin(new GranulaHtmlGenerator());
-				}
+                    HtmlBenchmarkReportGenerator htmlReportGenerator = (HtmlBenchmarkReportGenerator)reportGenerator;
+                    htmlReportGenerator.registerPlugin(new GranulaHtmlGenerator());
+                }
 			}
 		}
 	}
@@ -113,15 +139,5 @@ public class GranulaPlugin implements Plugin {
 	public void shutdown() {
 
 	}
-
-	private Path getLogDirectory(Benchmark benchmark) {
-		try {
-			return reportWriter.getOrCreateOutputDataPath().resolve(LOG_DIR).resolve(benchmark.getBenchmarkIdentificationString());
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
 
 }
