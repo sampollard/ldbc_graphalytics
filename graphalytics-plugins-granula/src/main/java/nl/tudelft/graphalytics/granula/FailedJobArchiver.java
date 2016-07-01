@@ -1,6 +1,8 @@
 package nl.tudelft.graphalytics.granula;
 
-import nl.tudelft.granula.modeller.entity.Runner;
+import nl.tudelft.granula.archiver.GranulaExecutor;
+import nl.tudelft.granula.modeller.entity.Execution;
+import nl.tudelft.granula.modeller.job.JobModel;
 import nl.tudelft.granula.util.FileUtil;
 import nl.tudelft.granula.util.json.JsonUtil;
 
@@ -11,12 +13,13 @@ public class FailedJobArchiver {
 
     public static void main(String[] args) {
         String driverLogPath = args[0];
-        Runner runner = (Runner) JsonUtil.fromJson(FileUtil.readFile(Paths.get(driverLogPath)), Runner.class);
-        runner.setEndTime(System.currentTimeMillis());
-        runner.setArcPath(Paths.get("./iffailed").toAbsolutePath().toString());
+        Execution execution = (Execution) JsonUtil.fromJson(FileUtil.readFile(Paths.get(driverLogPath)), Execution.class);
+        execution.setEndTime(System.currentTimeMillis());
+        execution.setArcPath(Paths.get("./iffailed").toAbsolutePath().toString());
+        JobModel jobModel = new JobModel(GranulaPlugin.getPlatformModel(execution.getPlatform()));
 
         try {
-            GranulaDriver.buildJobArchive(runner);
+            GranulaExecutor.buildJobArchive(execution, jobModel);
         } catch (IOException e) {
             e.printStackTrace();
         }
