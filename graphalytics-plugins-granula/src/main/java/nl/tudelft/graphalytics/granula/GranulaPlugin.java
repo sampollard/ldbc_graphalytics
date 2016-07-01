@@ -15,7 +15,9 @@
  */
 package nl.tudelft.graphalytics.granula;
 
+import nl.tudelft.granula.modeller.entity.Runner;
 import nl.tudelft.granula.util.FileUtil;
+import nl.tudelft.granula.util.json.JsonUtil;
 import nl.tudelft.graphalytics.domain.Benchmark;
 import nl.tudelft.graphalytics.domain.BenchmarkResult;
 import nl.tudelft.graphalytics.domain.BenchmarkSuite;
@@ -28,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class GranulaPlugin implements Plugin {
@@ -43,7 +46,7 @@ public class GranulaPlugin implements Plugin {
 	public GranulaPlugin(GranulaAwarePlatform platform, BenchmarkReportWriter reportWriter) {
 		this.platform = platform;
 		this.reportWriter = reportWriter;
-		this.granulaDriver = new GranulaDriver(platform);
+		this.granulaDriver = new GranulaDriver();
 	}
 
 	@Override
@@ -65,7 +68,7 @@ public class GranulaPlugin implements Plugin {
 	public void preBenchmark(Benchmark benchmark) {
 		if(GranulaDriver.enabled) {
 			if(GranulaDriver.platformLogEnabled) {
-				granulaDriver.storeDriverLog(platform, benchmark, getLogDirectory(benchmark));
+				granulaDriver.preserveDriverLog(platform, benchmark, getLogDirectory(benchmark));
 				platform.preBenchmark(benchmark, getLogDirectory(benchmark));
 			}
 		}
@@ -87,8 +90,29 @@ public class GranulaPlugin implements Plugin {
 		if (GranulaDriver.enabled) {
 			if (GranulaDriver.archivingEnabled) {
 				try {
-                    granulaDriver.setReportDirPath(reportWriter.getOrCreateOutputDataPath());
-                    granulaDriver.generateArchive(benchmarkSuiteResult);
+					Path reportDataPath = reportWriter.getOrCreateOutputDataPath();
+					for (BenchmarkResult benchmarkResult : benchmarkSuiteResult.getBenchmarkResults()) {
+
+						Path logPath = reportDataPath.resolve("log").resolve(benchmarkResult.getBenchmark().getBenchmarkIdentificationString());
+						Path arcPath = reportDataPath.getParent().resolve("html"); // no benchmarkId, multiple job not supported.
+
+						Path driverLogPath = logPath.resolve("runner").resolve("runner-log.js");
+						Runner runner = (Runner) JsonUtil.fromJson(FileUtil.readFile(driverLogPath), Runner.class);
+
+						try {
+							Files.createDirectories(logPath.resolve("platform"));
+							Files.createDirectories(logPath.resolve("environment"));
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+
+						runner.setStartTime(benchmarkResult.getStartOfBenchmark().getTime());
+						runner.setEndTime(benchmarkResult.getEndOfBenchmark().getTime());
+						runner.setArcPath(arcPath.toAbsolutePath().toString());
+
+						GranulaDriver.buildJobArchive(runner);
+					}
+
                 } catch (Exception ex) {
                     LOG.error("Failed to generate Granula archives for the benchmark results:", ex);
                 }

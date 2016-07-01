@@ -1,5 +1,6 @@
 package nl.tudelft.graphalytics.granula;
 
+import nl.tudelft.granula.modeller.entity.Runner;
 import nl.tudelft.granula.util.FileUtil;
 import nl.tudelft.granula.util.json.JsonUtil;
 import org.apache.commons.exec.CommandLine;
@@ -27,24 +28,28 @@ import java.util.List;
 public class EnvironmentArchiver {
 
 
-    public void creatEnvArchive(Path logDataPath, Path usedArcPath, String jobId) {
+    public void buildArchive(Runner runner) {
 
-        String envLogPath = logDataPath.resolve("environment").toAbsolutePath().toString();
-        collectEnvData(envLogPath, jobId);
-        createMontioringArc(envLogPath + "/" + jobId, usedArcPath.toString());
+        Path envLogPath = Paths.get(runner.getLogPath()).resolve("environment");
+        collectEnvData(envLogPath, runner.getJobId());
+
+        Path envArcPath =  Paths.get(runner.getArcPath()).resolve("granula/data").resolve("env-arc.js");
+        String envData = "var jobMetrics = " + JsonUtil.toJson(createMetrics(envLogPath.resolve(runner.getJobId())));
+        envData = envData.replaceAll("\\{\"key", "\n\\{\"key");
+        FileUtil.writeFile(envData, envArcPath);
     }
 
-    public void collectEnvData(String outpath, String benchmarkId) {
+
+
+    public void collectEnvData(Path outpath, String jobId) {
 
 
         CommandLine commandLine = new CommandLine("/var/scratch/wlngai/graphalytics-runner/debug/app/granula/sh/collect-data.sh");
-        commandLine.addArgument(benchmarkId);
-        commandLine.addArgument(outpath);
-        System.out.println("Collect monitoring data with command line: " + commandLine);
+        commandLine.addArgument(jobId);
+        commandLine.addArgument(outpath.toAbsolutePath().toString());
         executeCommand(commandLine);
 
-        System.out.println("Waiting for monitoring data." + commandLine);
-        Path successFile = Paths.get(outpath).resolve(benchmarkId).resolve("success");
+        Path successFile = outpath.resolve(jobId).resolve("success");
         waitForEnvLogs(successFile);
 
     }
@@ -84,24 +89,13 @@ public class EnvironmentArchiver {
         }
     }
 
-    public void createMontioringArc(String inPath, String outPath) {
-        System.out.println("inPath = " + inPath);
-        System.out.println("outPath = " + outPath);
 
-
-        (new File(outPath)).mkdirs();
-        Path utildatajs =  Paths.get(outPath).resolve("env-arc.js");
-        String data = "var jobMetrics = " + JsonUtil.toJson(createMetrics(inPath));
-        data = data.replaceAll("\\{\"key", "\n\\{\"key");
-        FileUtil.writeFile(data, utildatajs);
-    }
-
-    public List<MetricData> createMetrics(String inputPath) {
+    public List<MetricData> createMetrics(Path inputPath) {
 
 
         List<MetricData> metricDatas = new ArrayList<>();
 
-        String rootPath = inputPath;
+        String rootPath = inputPath.toAbsolutePath().toString();
         Collection files = FileUtils.listFiles(new File(rootPath), new RegexFileFilter("^(.*?)"), DirectoryFileFilter.DIRECTORY);
 
         long envLogFileSize = 0;
@@ -109,7 +103,6 @@ public class EnvironmentArchiver {
             Path filePath = ((File) f).toPath();
             if (Files.isRegularFile(filePath) && !filePath.getFileName().toString().equals("success")
                     ) {
-//                && filePath.toString().contains("1000ms")) {
                 envLogFileSize++;
                 MetricData metricData = new MetricData();
                 metricData.key = filePath.toAbsolutePath().toString().replaceAll(rootPath, "");

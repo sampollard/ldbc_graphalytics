@@ -32,27 +32,6 @@ import java.util.List;
  */
 public class GranulaHtmlGenerator implements HtmlBenchmarkReportGenerator.Plugin {
 
-	public static final String STATIC_RESOURCES[] = new String[]{
-			"granula/css/granula.css",
-			"granula/js/chart.js",
-			"granula/js/data.js",
-			"granula/js/environmentview.js",
-			"granula/js/job.js",
-			"granula/js/operation-chart.js",
-			"granula/js/operationview.js",
-			"granula/js/view.js",
-			"granula/js/util.js",
-			"granula/js/overview.js",
-			"granula/lib/bootstrap.css",
-			"granula/lib/bootstrap.js",
-			"granula/lib/jquery.js",
-			"granula/lib/d3.min.js",
-			"granula/lib/nv.d3.css",
-			"granula/lib/nv.d3.js",
-			"granula/lib/snap.svg-min.js",
-			"granula/lib/underscore-min.js",
-			"granula/visualizer.htm"
-	};
 
 	@Override
 	public void preGenerate(HtmlBenchmarkReportGenerator htmlBenchmarkReportGenerator, BenchmarkSuiteResult result) {
@@ -66,12 +45,7 @@ public class GranulaHtmlGenerator implements HtmlBenchmarkReportGenerator.Plugin
 	@Override
 	public Collection<BenchmarkReportFile> generateAdditionalReportFiles(
 			HtmlBenchmarkReportGenerator htmlBenchmarkReportGenerator, BenchmarkSuiteResult benchmarkSuiteResult) {
-		List<BenchmarkReportFile> additionalFiles = new ArrayList<>(STATIC_RESOURCES.length);
-		for (String resource : STATIC_RESOURCES) {
-			URL resourceUrl = HtmlBenchmarkReportGenerator.class.getResource("/" + resource);
-			additionalFiles.add(new StaticResource(resourceUrl, resource));
-		}
-		return additionalFiles;
+		return new ArrayList<>(0);
 	}
 
 }
