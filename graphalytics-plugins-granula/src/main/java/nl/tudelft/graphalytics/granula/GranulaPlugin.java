@@ -67,7 +67,6 @@ public class GranulaPlugin implements Plugin {
 		loadConfiguration();
 	}
 
-
 	@Override
 	public String getPluginName() {
 		return "granula";
@@ -87,7 +86,7 @@ public class GranulaPlugin implements Plugin {
 	public void preBenchmark(Benchmark benchmark) {
 		if(enabled) {
 			if(platformLogEnabled) {
-				preserveDriverLog(platform, benchmark, getLogDirectory(benchmark));
+				preserveExecutionLog(platform, benchmark, getLogDirectory(benchmark));
 				platform.preBenchmark(benchmark, getLogDirectory(benchmark));
 			}
 		}
@@ -103,6 +102,7 @@ public class GranulaPlugin implements Plugin {
 		}
 	}
 
+
 	@Override
 	public void postBenchmarkSuite(BenchmarkSuite benchmarkSuite, BenchmarkSuiteResult benchmarkSuiteResult) {
 		if (enabled) {
@@ -110,29 +110,8 @@ public class GranulaPlugin implements Plugin {
 				try {
 					Path reportDataPath = reportWriter.getOrCreateOutputDataPath();
 					for (BenchmarkResult benchmarkResult : benchmarkSuiteResult.getBenchmarkResults()) {
-
-						Path logPath = reportDataPath.resolve("log").resolve(benchmarkResult.getBenchmark().getBenchmarkIdentificationString());
-						Path arcPath = reportDataPath.getParent().resolve("html"); // no benchmarkId, multiple job not supported.
-
-						Path driverLogPath = logPath.resolve("execution").resolve("execution-log.js");
-						Execution execution = (Execution) JsonUtil.fromJson(FileUtil.readFile(driverLogPath), Execution.class);
-
-						try {
-							Files.createDirectories(logPath.resolve("platform"));
-							Files.createDirectories(logPath.resolve("environment"));
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-
-						execution.setStartTime(benchmarkResult.getStartOfBenchmark().getTime());
-						execution.setEndTime(benchmarkResult.getEndOfBenchmark().getTime());
-						execution.setArcPath(arcPath.toAbsolutePath().toString());
-						JobModel jobModel = new JobModel(getPlatformModel(execution.getPlatform()));
-
-						GranulaExecutor granulaExecutor = new GranulaExecutor();
-						granulaExecutor.buildJobArchive(execution, jobModel);
+						createArchive(benchmarkResult, reportDataPath);
 					}
-
                 } catch (Exception ex) {
                     LOG.error("Failed to generate Granula archives for the benchmark results:", ex);
                 }
@@ -188,7 +167,7 @@ public class GranulaPlugin implements Plugin {
 	}
 
 
-	public void preserveDriverLog(GranulaAwarePlatform platform, Benchmark benchmark, Path benchmarkLogDir) {
+	public void preserveExecutionLog(GranulaAwarePlatform platform, Benchmark benchmark, Path benchmarkLogDir) {
 		Path backupPath = benchmarkLogDir.resolve("execution");
 		backupPath.toFile().mkdirs();
 
@@ -205,7 +184,29 @@ public class GranulaPlugin implements Plugin {
 		FileUtil.writeFile(JsonUtil.toJson(execution), backFile);
 	}
 
+	private void createArchive(BenchmarkResult benchmarkResult, Path reportDataPath) {
+		Path logPath = reportDataPath.resolve("log").resolve(benchmarkResult.getBenchmark().getBenchmarkIdentificationString());
+		Path arcPath = reportDataPath.getParent().resolve("html"); // no benchmarkId, multiple job not supported.
 
+		Path driverLogPath = logPath.resolve("execution").resolve("execution-log.js");
+		Execution execution = (Execution) JsonUtil.fromJson(FileUtil.readFile(driverLogPath), Execution.class);
+
+		try {
+			Files.createDirectories(logPath.resolve("platform"));
+			Files.createDirectories(logPath.resolve("environment"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		execution.setStartTime(benchmarkResult.getStartOfBenchmark().getTime());
+		execution.setEndTime(benchmarkResult.getEndOfBenchmark().getTime());
+		execution.setArcPath(arcPath.toAbsolutePath().toString());
+		JobModel jobModel = new JobModel(getPlatformModel(execution.getPlatform()));
+
+		GranulaExecutor granulaExecutor = new GranulaExecutor();
+		granulaExecutor.setExecution(execution);
+		granulaExecutor.buildJobArchive(jobModel);
+	}
 
 	public static PlatformModel getPlatformModel(String platformName) {
 

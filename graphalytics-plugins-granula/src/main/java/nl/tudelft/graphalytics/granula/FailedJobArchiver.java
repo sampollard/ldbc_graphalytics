@@ -18,10 +18,9 @@ public class FailedJobArchiver {
         execution.setArcPath(Paths.get("./iffailed").toAbsolutePath().toString());
         JobModel jobModel = new JobModel(GranulaPlugin.getPlatformModel(execution.getPlatform()));
 
-        try {
-            GranulaExecutor.buildJobArchive(execution, jobModel);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        GranulaExecutor granulaExecutor = new GranulaExecutor();
+        granulaExecutor.setExecution(execution);
+        granulaExecutor.buildJobArchive(jobModel);
+
     }
 }
