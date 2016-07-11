@@ -186,7 +186,7 @@ public class GranulaPlugin implements Plugin {
 
 	private void createArchive(BenchmarkResult benchmarkResult, Path reportDataPath) {
 		Path logPath = reportDataPath.resolve("log").resolve(benchmarkResult.getBenchmark().getBenchmarkIdentificationString());
-		Path arcPath = reportDataPath.getParent().resolve("html"); // no benchmarkId, multiple job not supported.
+		Path arcPath = reportDataPath.getParent().resolve("html").resolve("granula"); // no benchmarkId, multiple job not supported.
 
 		Path driverLogPath = logPath.resolve("execution").resolve("execution-log.js");
 		Execution execution = (Execution) JsonUtil.fromJson(FileUtil.readFile(driverLogPath), Execution.class);
