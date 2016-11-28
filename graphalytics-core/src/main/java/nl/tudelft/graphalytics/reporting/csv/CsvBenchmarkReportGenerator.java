@@ -38,8 +38,9 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 	private Map<Benchmark, String> pluginPageLinks;
 	private static final char delim = ',';
 
-	private String createCsvFromResults(BenchmarkSuiteResult result) {
-		reportData = new BenchmarkReportData(result); // More convenient to work with
+	private String createCsvFromResult(BenchmarkSuiteResult result) {
+		// BenchmarkReportData provides nicer wrappers for results.
+		BenchmarkReportData reportData = new BenchmarkReportData(result);
 		return "Unimplemented";
 	}
 
@@ -55,7 +56,7 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 		Collection<BenchmarkReportFile> reportFiles = new LinkedList<>();
 		// First add runtime in seconds
 		String csvString = createCsvFromResult(result);
-		reportFiles.add(new GeneratedCsvFile(csvString, "../", "runtime"));
+		reportFiles.add(new GeneratedCsv(csvString, "../", "runtime"));
 
 		// Callback to plugins after generation for additional files
 		for (Plugin plugin : plugins) {

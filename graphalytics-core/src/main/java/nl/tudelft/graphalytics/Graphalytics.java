@@ -23,6 +23,7 @@ import nl.tudelft.graphalytics.plugin.Plugins;
 import nl.tudelft.graphalytics.reporting.BenchmarkReport;
 import nl.tudelft.graphalytics.reporting.BenchmarkReportWriter;
 import nl.tudelft.graphalytics.reporting.html.HtmlBenchmarkReportGenerator;
+import nl.tudelft.graphalytics.reporting.csv.CsvBenchmarkReportGenerator;
 import org.apache.commons.configuration.ConfigurationException;
 
 import java.io.IOException;
@@ -49,8 +50,8 @@ public class Graphalytics {
 		// Notify all plugins of the result of running the benchmark suite
 		plugins.postBenchmarkSuite(benchmarkSuite, benchmarkSuiteResult);
 		// Generate the benchmark report
-		HtmlBenchmarkReportGenerator benchmarkReportGenerator = new HtmlBenchmarkReportGenerator();
-		// CsvBenchmarkReportGenerator benchmarkReportGenerator = new CsvBenchmarkReportGenerator();
+		// HtmlBenchmarkReportGenerator benchmarkReportGenerator = new HtmlBenchmarkReportGenerator();
+		CsvBenchmarkReportGenerator benchmarkReportGenerator = new CsvBenchmarkReportGenerator();
 		plugins.preReportGeneration(benchmarkReportGenerator);
 		BenchmarkReport report = benchmarkReportGenerator.generateReportFromResults(benchmarkSuiteResult);
 		// Write the benchmark report
