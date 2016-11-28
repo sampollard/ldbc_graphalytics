@@ -49,9 +49,10 @@ public class Graphalytics {
 		// Notify all plugins of the result of running the benchmark suite
 		plugins.postBenchmarkSuite(benchmarkSuite, benchmarkSuiteResult);
 		// Generate the benchmark report
-		HtmlBenchmarkReportGenerator htmlBenchmarkReportGenerator = new HtmlBenchmarkReportGenerator();
-		plugins.preReportGeneration(htmlBenchmarkReportGenerator);
-		BenchmarkReport report = htmlBenchmarkReportGenerator.generateReportFromResults(benchmarkSuiteResult);
+		HtmlBenchmarkReportGenerator benchmarkReportGenerator = new HtmlBenchmarkReportGenerator();
+		// CsvBenchmarkReportGenerator benchmarkReportGenerator = new CsvBenchmarkReportGenerator();
+		plugins.preReportGeneration(benchmarkReportGenerator);
+		BenchmarkReport report = benchmarkReportGenerator.generateReportFromResults(benchmarkSuiteResult);
 		// Write the benchmark report
 		reportWriter.writeReport(report);
 		// Finalize any loaded plugins
