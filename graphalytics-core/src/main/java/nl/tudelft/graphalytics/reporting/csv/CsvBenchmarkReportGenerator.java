@@ -15,14 +15,18 @@
  */
 package nl.tudelft.graphalytics.reporting.csv;
 
+import nl.tudelft.graphalytics.domain.Algorithm;
+import nl.tudelft.graphalytics.domain.BenchmarkResult;
 import nl.tudelft.graphalytics.domain.Benchmark;
 import nl.tudelft.graphalytics.domain.BenchmarkSuiteResult;
+import nl.tudelft.graphalytics.domain.GraphSet;
 import nl.tudelft.graphalytics.reporting.BenchmarkReport;
 import nl.tudelft.graphalytics.reporting.BenchmarkReportData;
 import nl.tudelft.graphalytics.reporting.BenchmarkReportFile;
 import nl.tudelft.graphalytics.reporting.BenchmarkReportGenerator;
 
 import java.util.*;
+import java.lang.StringBuffer;
 
 /**
  * Utility class for generating an CSV-based BenchmarkReport from a BenchmarkSuiteResult.
@@ -36,11 +40,26 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 	public static final String REPORT_TYPE_IDENTIFIER = "csv";
 	private final List<Plugin> plugins = new LinkedList<>();
 	private Map<Benchmark, String> pluginPageLinks;
-	private static final char delim = ',';
+	private static final String delim = ",";
 
 	private String createCsvFromResult(BenchmarkSuiteResult result) {
-		// BenchmarkReportData provides nicer wrappers for results.
+		StringBuffer csv = new StringBuffer(delim + delim);
 		BenchmarkReportData reportData = new BenchmarkReportData(result);
+		boolean header = true;
+		Collection<GraphSet> allGraphSets = reportData.getGraphSets();
+		for (Algorithm alg : reportData.getAlgorithms()) {
+			if (header) { // Header row: Print out all the graph names
+				for (GraphSet graphset : allGraphSets) {
+					csv.append(delim + graphset.getName());
+				}
+				header = false;
+			} else {
+				csv.append(delim + "0"); // UNIMPLEMENTED
+			}
+			csv.append("\n");
+			// Subsequent rows: Print out the algorithms and all the results
+			csv.append(alg.getAcronym());
+		}
 		return "Unimplemented";
 	}
 
