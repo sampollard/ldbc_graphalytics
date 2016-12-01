@@ -43,7 +43,7 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 	private static final String delim = ",";
 
 	private String createCsvFromResult(BenchmarkSuiteResult result) {
-		StringBuffer csv = new StringBuffer(delim); // Row 1, Col1 is blank
+		StringBuffer csv = new StringBuffer();
 		BenchmarkReportData reportData = new BenchmarkReportData(result);
 		boolean header = true;
 		Collection<GraphSet> allGraphSets = reportData.getGraphSets();
