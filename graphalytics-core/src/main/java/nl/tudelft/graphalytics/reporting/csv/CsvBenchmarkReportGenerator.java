@@ -54,13 +54,17 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 				}
 				header = false;
 			} else {
-				csv.append(delim + "0"); // UNIMPLEMENTED
+				Map<GraphSet, BenchmarkResult> resultsByAlgorithm = reportData.getResults(alg);
+				for (GraphSet graphset : allGraphSets) {
+					long runtime = resultsByAlgorithm.get(graphset).getElapsedTimeInMillis();
+					csv.append(delim + Long.toString(runtime));
+				}
 			}
 			csv.append("\n");
 			// Subsequent rows: Print out the algorithms and all the results
 			csv.append(alg.getAcronym());
 		}
-		return "Unimplemented";
+		return csv.toString();
 	}
 
 	@Override
