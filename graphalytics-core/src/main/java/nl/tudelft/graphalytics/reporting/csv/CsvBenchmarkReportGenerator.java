@@ -43,17 +43,18 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 	private static final String delim = ",";
 
 	private String createCsvFromResult(BenchmarkSuiteResult result) {
-		StringBuffer csv = new StringBuffer(delim + delim);
+		StringBuffer csv = new StringBuffer(delim); // Row 1, Col1 is blank
 		BenchmarkReportData reportData = new BenchmarkReportData(result);
 		boolean header = true;
 		Collection<GraphSet> allGraphSets = reportData.getGraphSets();
 		for (Algorithm alg : reportData.getAlgorithms()) {
-			if (header) { // Header row: Print out all the graph names
+			if (header) { // Header row: Print out all the dataset names
 				for (GraphSet graphset : allGraphSets) {
 					csv.append(delim + graphset.getName());
 				}
 				header = false;
-			} else {
+			} else { // Subsequent rows: Print out the algorithms and all the results
+				csv.append(alg.getAcronym());
 				Map<GraphSet, BenchmarkResult> resultsByAlgorithm = reportData.getResults(alg);
 				for (GraphSet graphset : allGraphSets) {
 					long runtime = resultsByAlgorithm.get(graphset).getElapsedTimeInMillis();
@@ -61,8 +62,6 @@ public class CsvBenchmarkReportGenerator implements BenchmarkReportGenerator {
 				}
 			}
 			csv.append("\n");
-			// Subsequent rows: Print out the algorithms and all the results
-			csv.append(alg.getAcronym());
 		}
 		return csv.toString();
 	}
